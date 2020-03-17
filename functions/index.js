@@ -13,7 +13,10 @@ const { signupRoute,
 const { createAScream ,
      getAllScreams ,
      getScream ,
-     commentOnScream
+     commentOnScream,
+     likeScream,
+     unlike,
+     deleteScream
     } = require('./routes/scream-routes')
 const { FBAuth } = require('./util/FBauth')
 
@@ -29,7 +32,11 @@ app.get('/user',FBAuth ,getAuthenticatedUser);
 app.post('/create', FBAuth , createAScream);
 app.get('/mydata', FBAuth ,getAllScreams);
 // #10
-app.get('/mydata/:screamid',FBAuth,getScream);
+app.get('/mydata/:screamId',FBAuth,getScream);
 app.post('/comment/:screamId',FBAuth,commentOnScream);
+//#11
+app.get('/mydata/:screamId/like',FBAuth,likeScream)
+app.get('/mydata/:screamId/unlike',FBAuth,unlike)
+app.delete('/mydata/:screamId', FBAuth ,deleteScream);
 
 exports.api = functions.https.onRequest(app);
