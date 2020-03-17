@@ -1,4 +1,5 @@
-const { auth, db,adminAuth } = require('./config')
+const { db } = require('./config')
+const { admin } = require("./admin")
 
 exports.FBAuth = (req,res,next)=>{
     let token;
@@ -10,22 +11,23 @@ exports.FBAuth = (req,res,next)=>{
         msg: 'no token unauthorize'
       })
     }
-    adminAuth.verifyIdToken(token)
+    admin.auth().verifyIdToken(token)
             .then(decoded=>{
               req.user = decoded; // add user data in user headers
-              return db.collection('mydata')
+              return db.collection('users') // database check 
                        .where('userId','==',req.user.uid)
                        .limit(1)
                        .get();
             })
             .then(data=>{
                 req.user.handle = data.docs[0].data().handle;
+                req.user.imageUrl = data.docs[0].data().imageUrl
               return next();
             })
             .catch(err=>{
               return res.status(500).json({
                 msg: 'authorization error',
-                error: err
+                error: err.code
               })
             })
   }

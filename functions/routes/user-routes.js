@@ -83,7 +83,7 @@ exports.uploadImage = (req, res) => {
   const path = require('path');
   const os = require('os');
   const fs = require('fs');
-
+  
   const busboy = new BusBoy({ headers: req.headers });
 
   let imageToBeUploaded = {};
@@ -115,7 +115,7 @@ exports.uploadImage = (req, res) => {
       })
       .then(() => {
         const imageUrl = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${imageFileName}?alt=media`;
-        return db.doc(`/users/user01`).update({ imageUrl });
+        return db.doc(`/users/${req.user.handle}`).update({ imageUrl });
       })
       .then(() => {
         return res.status(200).json({ message: 'image uploaded successfully' });
@@ -127,3 +127,43 @@ exports.uploadImage = (req, res) => {
   });
   busboy.end(req.rawBody);
 };
+
+exports.addUserDetails = (req,res)=>{
+  //please set validate data
+  const { bio,location,website } = req.body
+  //and update
+  db.doc(`/users/${req.user.handle}`).update({bio,location,website})
+    .then(()=>{
+      res.status(200).json({
+        msg: 'user details successfully update'
+      })
+    })
+    .catch(err=>{
+      res.status(500).json({
+        err: err.code
+      })
+    })
+}
+
+exports.getAuthenticatedUser = (req,res)=>{
+  var userData = {};
+  db.doc(`/users/${req.user.handle}`).get()
+  .then((data)=>{
+    if(data.exists){
+      console.log('================')
+    userData.credentials = data.data();
+    return db.collection('likes').where('userHandle','==',req.user.handle).get()
+    }
+  })
+  .then(doc=>{
+    if(doc.exists){
+      userData.likes = doc.data();
+    }
+    res.status(200).json(userData)
+  })
+  .catch(err=>{
+    res.status(500).json({
+      err: err.code
+    })
+  })
+}
