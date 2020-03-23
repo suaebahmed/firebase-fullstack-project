@@ -5,4 +5,5 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
   databaseURL: "https://fir-funtiontutorial.firebaseio.com"
 });
-module.exports = { admin};
+const dbAdmin = admin.firestore();
+module.exports = { admin , dbAdmin};

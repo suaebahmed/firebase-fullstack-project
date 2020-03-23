@@ -49,51 +49,81 @@ exports.createAScream = (req,res,next) =>{
           })
     })
 }
+
 // delete scream -- post
 exports.deleteScream = (req,res,next)=>{
     const id = req.params.screamId;
     console.log(id)
-    const likesDocument = db.collection('likes').where('userHandle','==',req.user.handle)
-                           .where('screamId','==',id).get()
-    const commentsDocument = db.collection('comments').where('screamId','==',id).get();
-    const scream = db.collection('screams').doc(id).get()
+    console.log(req.user)
+    // console.log(id)
+    // const likesDocument = db.collection('likes').where('userHandle','==',req.user.handle)
+    //                        .where('screamId','==',id).get()
+    // const commentsDocument = db.collection('comments').where('screamId','==',id).get();
+    // const scream = db.collection('screams').doc(id).get()
 
-    scream.then((doc)=>{
+    // scream.then((doc)=>{
+    //   if(!doc.exists){
+    //     return res.status(500).json({msg: 'scream not found'})
+    //   }
+    //   if(doc.data().userHandle !== req.user.handle){
+    //     return res.status(400).json({msg: 'unauthorized'})
+    //   }else{
+    //     db.collection('screams').doc(id).delete();
+    //   }
+    //    // res.status(200).json({msg: 'successfully deleted'})
+    // })
+    // .then(()=>{
+    //    return likesDocument.then(data=>{
+    //     data.docs.forEach(doc=>{
+    //       let docId = doc.id;
+    //       db.collection('likes').doc(docId).delete();
+    //     })
+    //   })
+    // })
+    // .then(()=>{
+    //   return commentsDocument.then(data=>{
+    //     data.docs.forEach(doc=>{
+    //       let docId = doc.id;
+    //       db.collection('comments').doc(docId).delete();
+    //     })
+    //   })
+    // })
+    // .then(()=>{
+    //         return res.status(200).json({msg: 'successfully deleted'})
+    // })
+    // .catch(err=>{
+    //       return res.status(500).json({err: 'error '})
+    // })
+  // ---------------------------------------
+  db.collection('screams').doc(id).get()  // find post
+    .then(doc=>{
       if(!doc.exists){
-
-        console.log(doc.exists,'=====================')
-        return res.status(500).json({msg: 'scream not found'})
-      }
-      if(doc.data().userHandle !== req.user.handle){
-        return res.status(400).json({msg: 'unauthorized'})
+          return res.status(404).json({err: ' the post is not found'})
       }else{
         db.collection('screams').doc(id).delete();
+        return db.collection('comments').where('screamId','==',id).get() //find comments
       }
-       // res.status(200).json({msg: 'successfully deleted'})
     })
-    .then(()=>{
-       return likesDocument.then(data=>{
-        data.docs.forEach(doc=>{
-          let docId = doc.id;
-          db.collection('likes').doc(docId).delete();
-        })
+    .then(data=>{
+      data.docs.forEach(doc=>{
+        db.collection('comments').doc(doc.id).delete(); 
       })
+      return db.collection('likes').where('userHandle','==',req.user.handle)
+                              .where('screamId','==',id).get()  // find likes
     })
-    .then(()=>{
-      return commentsDocument.then(data=>{
-        data.docs.forEach(doc=>{
-          let docId = doc.id;
-          db.collection('comments').doc(docId).delete();
-        })
+    .then(data=>{
+      data.docs.forEach(doc=>{
+        db.collection('comments').doc(doc.id).delete(); 
       })
-    })
-    .then(()=>{
-            return res.status(200).json({msg: 'successfully deleted'})
+      return res.status(200).json({
+                msg: 'succesfully deleted'
+              })
     })
     .catch(err=>{
-          return res.status(500).json({err: 'error '})
+      return res.status(500).json({
+        msg: 'error somthing went worng'
+      })
     })
-
 }
 
 exports.getScream = (req,res,next)=>{

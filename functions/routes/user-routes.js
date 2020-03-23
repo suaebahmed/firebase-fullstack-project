@@ -46,13 +46,14 @@ exports.signupRoute = (req,res,next)=>{
         return res.status(500).json({
           msg: 'your email already exits'
         })
-      } else{
-        res.status(500).json({
-        msg: err.message,
-        errCode: err.code,
-        err: err
-      })
-      }
+      } 
+      // else{
+      //   res.status(500).json({
+      //   msg: err.message,
+      //   errCode: err.code,
+      //   err: err
+      // })
+      // }
     });
 }
 
