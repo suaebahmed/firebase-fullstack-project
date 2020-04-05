@@ -1,17 +1,21 @@
-const { auth, config,db } = require('../util/config')
+const { auth, config,db ,database} = require('../util/config')
 const { validateSignupData ,validateSigninData } = require('../util/validate')
 const { admin } = require('../util/admin')
 
 
 exports.signupRoute = (req,res,next)=>{
+    let userCredentials
     let uid;
     let token;
-    var {email,password,handle} = req.body;
+    var {email,password} = req.body;
     
-    const { valid, errors } = validateSignupData(req.body)
-    if(!valid){
-        return res.status(400).json(errors)
-    }
+    // const { valid, errors } = validateSignupData(req.body)
+    // if(!valid){
+    //     return res.status(400).json(errors)
+    // }
+    console.log(req.body)
+    // genarate random key
+    const handle = database.ref().push().key;
 
     db.doc(`/users/${handle}`).get()
     .then(doc=>{
@@ -29,7 +33,7 @@ exports.signupRoute = (req,res,next)=>{
     })
     .then(istoken=>{
       token = istoken // this is promise base we should call indivitual
-      const userCredentials = { 
+       userCredentials = { 
         userId: uid,
         email: email,
         handle: handle,
@@ -39,7 +43,8 @@ exports.signupRoute = (req,res,next)=>{
       return db.doc(`/users/${handle}`).set(userCredentials)
     })
     .then(()=>{
-      return res.status(201).json({token})
+      
+      return res.status(200).json({token,user: userCredentials})
     })
     .catch(err=>{
       if(err.code === 'auth/email-already-in-use'){
@@ -58,24 +63,39 @@ exports.signupRoute = (req,res,next)=>{
 }
 
 exports.signinRoute = (req,res,next)=>{
-    const {email,password} = req.body;
-
-    const { valid, errors } = validateSigninData(req.body)
-    if(!valid){
-        return res.status(400).json(errors)
-    }
+        const {email,password} = req.body;
+        let token;
+        let uid;
+        let userInfo;
+        // const { valid, errors } = validateSigninData(req.body)
+        // if(!valid){
+        //     return res.status(400).json(errors)
+        // }
         auth.signInWithEmailAndPassword(email,password)
         .then(data=>{   // not return user info but does onAuthStateChanged(user=>{})
+          uid = data.user.uid
           return data.user.getIdToken()
         })
-        .then(token=>{
-          res.status(200).json({token})
+        .then(isToken=>{
+          token = isToken;
+          return db.collection(`users`).where('userId','==',uid).limit(1).get()
+        })
+        .then(doc=>{
+          doc.docs.forEach(doc1=>{
+            userInfo = doc1.data()
+          })
+          return res.status(200).json({token,user: userInfo})
         })
         .catch(err=>{
-          return res.status(500).json({
-            msg: 'user signin fail',
-            error: err
-          })
+          // return res.status(500).json({
+          //   msg: 'user signin fail',
+          //   error: err
+          // })
+          if(err.code === 'auth/email-already-in-use'){
+            return res.status(500).json({
+              msg: 'your email already exits'
+            })
+          } 
         })
 }
 
@@ -151,19 +171,18 @@ exports.getAuthenticatedUser = (req,res)=>{
   db.doc(`/users/${req.user.handle}`).get()
   .then((data)=>{
     if(data.exists){
-      console.log('================')
-    userData.credentials = data.data();
-    return db.collection('likes').where('userHandle','==',req.user.handle).get()
+    userData = data.data();
+  //   return db.collection('likes').where('userHandle','==',req.user.handle).get()
     }
-  })
-  .then(doc=>{
-    if(doc.exists){
-      userData.likes = doc.data();
-    }
-    res.status(200).json(userData)
+  // })
+  // .then(doc=>{
+  //   if(doc.exists){
+  //     userData.likes = doc.data();
+  //   }
+    return res.status(200).json({user: userData})
   })
   .catch(err=>{
-    res.status(500).json({
+    return res.status(500).json({
       err: err.code
     })
   })

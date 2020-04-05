@@ -18,5 +18,6 @@ firebase.initializeApp(config);
 // exports.admin = admin;
 exports.db = firebase.firestore();
 exports.auth = firebase.auth();
+exports.database = firebase.database();
 exports.config = config;
 

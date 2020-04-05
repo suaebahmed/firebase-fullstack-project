@@ -22,6 +22,13 @@ const { createAScream ,
     } = require('./routes/scream-routes')
 const { FBAuth } = require('./util/FBauth')
 
+app.use((req, res, next)=>{
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With,x-auth-token, authorization ,Content-Type, Accept');
+    res.header('Access-Control-Allow-Methods','GET,HEAD,POST,DELETE')
+    next();
+  });
+  
 // user route
 app.post('/signup',signupRoute)
 app.post('/signin',signinRoute)
@@ -31,15 +38,16 @@ app.get('/user',FBAuth ,getAuthenticatedUser);
 
 
 // post route
-app.post('/create', FBAuth , createAScream);
-app.get('/mydata', FBAuth ,getAllScreams);
+app.post('/posts', FBAuth , createAScream);
+app.get('/posts', FBAuth ,getAllScreams);
 // #10
-app.get('/mydata/:screamId',FBAuth,getScream);
-app.post('/comment/:screamId',FBAuth,commentOnScream);
+app.get('/posts/:postId',FBAuth,getScream);
+// app.delete('/posts/:postId', FBAuth ,deleteScream);
+app.post('/posts/:postId/comment',FBAuth,commentOnScream);
 //#11
-app.get('/mydata/:screamId/like',FBAuth,likeScream)
-app.get('/mydata/:screamId/unlike',FBAuth,unlike)
-app.delete('/mydata/:screamId', FBAuth ,deleteScream);
+app.get('/posts/:postId/like',FBAuth,likeScream)
+app.get('/posts/:postId/unlike',FBAuth,unlike)
+app.delete('/posts/:postId', FBAuth ,deleteScream);
 
 exports.api = functions.https.onRequest(app);
 

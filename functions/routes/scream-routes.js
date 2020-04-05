@@ -52,8 +52,8 @@ exports.createAScream = (req,res,next) =>{
 
 // delete scream -- post
 exports.deleteScream = (req,res,next)=>{
-    const id = req.params.screamId;
-    console.log(id)
+    const id = req.params.postId;
+    // console.log(id)
     console.log(req.user)
     // console.log(id)
     // const likesDocument = db.collection('likes').where('userHandle','==',req.user.handle)
@@ -95,29 +95,42 @@ exports.deleteScream = (req,res,next)=>{
     //       return res.status(500).json({err: 'error '})
     // })
   // ---------------------------------------
-  db.collection('screams').doc(id).get()  // find post
+  db.collection('screams').doc(id).get()  //it is important to find only user's post
     .then(doc=>{
       if(!doc.exists){
           return res.status(404).json({err: ' the post is not found'})
       }else{
-        db.collection('screams').doc(id).delete();
-        return db.collection('comments').where('screamId','==',id).get() //find comments
+        // db.collection('screams').doc(id).delete();
+        if(doc.data().userHandle === req.user.handle){
+          return doc.ref.delete();
+        }
+        else{
+          return res.status(400).json({err: 'this is not your post'})
+        }
       }
     })
-    .then(data=>{
-      data.docs.forEach(doc=>{
-        db.collection('comments').doc(doc.id).delete(); 
-      })
-      return db.collection('likes').where('userHandle','==',req.user.handle)
-                              .where('screamId','==',id).get()  // find likes
+    .then(()=>{
+      return db.collection('comments').where('screamId','==',id).get()
     })
     .then(data=>{
       data.docs.forEach(doc=>{
-        db.collection('comments').doc(doc.id).delete(); 
+        return db.collection('comments').doc(doc.id).delete(); 
       })
+      // return db.collection('likes').where('userHandle','==',req.user.handle) don't need user's like
+      //                         .where('screamId','==',id).get() 
+    })
+    .then(()=>{
+      return db.collection('likes').where('screamId','==',id).get()  // find likes
+    })
+    .then(data=>{
+      data.docs.forEach(doc=>{
+        return db.collection('likes').doc(doc.id).delete(); 
+      })
+    })
+    .then(()=>{
       return res.status(200).json({
-                msg: 'succesfully deleted'
-              })
+        msg: 'succesfully deleted'
+      })
     })
     .catch(err=>{
       return res.status(500).json({
@@ -126,9 +139,10 @@ exports.deleteScream = (req,res,next)=>{
     })
 }
 
+//  foreign key used
 exports.getScream = (req,res,next)=>{
   var screamData = {}
-  let id = req.params.screamId;
+  let id = req.params.postId;
   console.log(id)
   db.doc('/screams/'+id).get()
   .then(doc=>{
@@ -150,7 +164,7 @@ exports.getScream = (req,res,next)=>{
 
 exports.commentOnScream = (req,res,next)=>{
   if(req.body.body.trim() == '') return res.status(400).json({error: 'Must not be empty'})
-  let id = req.params.screamId
+  let id = req.params.postId
 
   const newComment = {
     body: req.body.body,
@@ -177,9 +191,9 @@ exports.commentOnScream = (req,res,next)=>{
   })
 }
 
-// like scream
+// like scream used composite key
 exports.likeScream = (req,res,next) =>{
-  const id = req.params.screamId;
+  const id = req.params.postId;
   // not understand
   const likeDocument = db.collection('likes').where('userHandle','==',req.user.handle)
                                              .where('screamId','==',id).limit(1)
@@ -200,9 +214,9 @@ exports.likeScream = (req,res,next) =>{
   .then(data=>{
     // not understand
     // console.log()
-    data.docs.forEach(doc=>{
-      console.log(doc.data())
-    })
+    // data.docs.forEach(doc=>{
+    //   console.log(doc.data())
+    // })
     if(data.empty){
       return db.collection('likes').add({
         screamId: id,
@@ -228,9 +242,9 @@ exports.unlike = (req,res,next)=>{
   // const id = req.params.screamId;
   const likeDocument = db.collection('likes')
   .where('userHandle','==',req.user.handle)
-  .where('screamId','==',req.params.screamId);
+  .where('screamId','==',req.params.postId);
   
-  const screamDocument = db.doc('/screams/'+req.params.screamId);
+  const screamDocument = db.doc('/screams/'+req.params.postId);
   let screamData;
   screamDocument.get()
   .then(doc=>{
